@@ -144,7 +144,6 @@ class wiipro:
         for idx, row in sum_last_10_values_df.iterrows():
             if row["INSTRUMENT_NAME"] not in ["INSTRUMENT1", "INSTRUMENT2", "INSTRUMENT3"]:
                 self.result[row["INSTRUMENT_NAME"]] = row["VALUE"]
-        
         print(f"Thread 4 Ended.")
 
     @calculate_performance
@@ -165,3 +164,4 @@ class wiipro:
                 return None
         else:
             print("The selected date is not a business day (Mon-Fri)")
+            return None
