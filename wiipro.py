@@ -4,6 +4,7 @@ import time
 import psutil
 from datetime import datetime
 import threading
+import concurrent.futures
 
 class wiipro:
 
@@ -97,11 +98,11 @@ class wiipro:
         # Order by Data
         self.__sort()
 
-        self.__t3(func)                                                     # Custom Function for the Instrument 3
+        self.__custom_instr3(func)                                                     # Custom Function for the Instrument 3
 
-        threads.append(threading.Thread(target=self.__t1))                  # Mean for Instrument 1
-        threads.append(threading.Thread(target=self.__t2))                  # Mean for Instrument 2 (only Novembre 2014)
-        threads.append(threading.Thread(target=self.__t4))                  # Sum last 10 elements of every Instrument except Instrument1, Instrument2, Instrument3
+        threads.append(threading.Thread(target=self.__mean_instr1))                  # Mean for Instrument 1
+        threads.append(threading.Thread(target=self.__mean_instr2_nov2014))                  # Mean for Instrument 2 (only Novembre 2014)
+        threads.append(threading.Thread(target=self.__instrN_sum_last_10))                  # Sum last 10 elements of every Instrument except Instrument1, Instrument2, Instrument3
         
         for thread in threads:
             thread.start()
@@ -118,26 +119,26 @@ class wiipro:
         print("Sorting Ended.")
     
     @calculate_performance
-    def __t1(self):
+    def __mean_instr1(self):
         print("Starting Thread 1...")
         self.result["INSTRUMENT1_MEAN"] = self.data[self.data["INSTRUMENT_NAME"] == "INSTRUMENT1"]["VALUE"].mean()
         print("Thread 1 Ended.")
 
     @calculate_performance
-    def __t2(self):
+    def __mean_instr2_nov2014(self):
         print("Starting Thread 2...")
         target_date = pd.to_datetime('Nov-2014', format='%b-%Y').to_period('M')
         self.result["INSTRUMENT2_NOV2014_MEAN"] = self.data[(self.data["INSTRUMENT_NAME"] == "INSTRUMENT2") & (self.data["DATE"].dt.to_period('M') == target_date)]["VALUE"].mean()
         print("Thread 2 Ended.")
 
     @calculate_performance
-    def __t3(self, func):
+    def __custom_instr3(self, func):
         print("Starting Thread 3...")
         self.result["INSTRUMENT3_CUSTOM"] = func(self.data[self.data["INSTRUMENT_NAME"] == "INSTRUMENT3"]["VALUE"]) if func is not None else None
         print("Thread 3 Ended.")
 
     @calculate_performance
-    def __t4(self):
+    def __instrN_sum_last_10(self):
         print(f"Starting Thread 4...")
         # Calculate the sum of the last 10 values for each instrument
         sum_last_10_values_df = self.data.groupby("INSTRUMENT_NAME").tail(10).groupby("INSTRUMENT_NAME")["VALUE"].sum().reset_index()
@@ -150,18 +151,11 @@ class wiipro:
     def calculate(self, target_instrument, target_date):
         target_date = pd.to_datetime(target_date, format='%d-%b-%Y')
         if 0 <= target_date.weekday() <= 4:
-            value = self.data[(self.data["INSTRUMENT_NAME"] == target_instrument) & (self.data["DATE"] == target_date)]["VALUE"]
-            if len(value) == 1:
-                if target_instrument in self.modifier_dict.keys():
-                    return value * self.modifier_dict[target_instrument]
-                else:
-                    return value
-            elif len(value) == 0:
-                print(f"{target_instrument} for date {target_date} not found!")
-                return None
+            value = self.data[(self.data["INSTRUMENT_NAME"] == target_instrument) & (self.data["DATE"] == target_date)]["VALUE"]    # Filter required on millions of rows
+            if target_instrument in self.modifier_dict.keys():
+                return value * self.modifier_dict[target_instrument]
             else:
-                print("Found duplicates in current targeting parameters")
-                return None
+                return value
         else:
             print("The selected date is not a business day (Mon-Fri)")
             return None
