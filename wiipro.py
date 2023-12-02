@@ -91,7 +91,6 @@ class wiipro:
 
     @calculate_performance
     def run_engine(self, func = None):
-        result = {}           
         threads = []
 
         # Order by Data
@@ -109,7 +108,7 @@ class wiipro:
         for thread in threads:
             thread.join()
 
-        return self.result
+        return True
 
     @calculate_performance
     def __sort(self):
