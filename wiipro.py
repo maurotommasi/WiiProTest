@@ -4,7 +4,6 @@ import time
 import psutil
 from datetime import datetime
 import threading
-import concurrent.futures
 
 class wiipro:
 
